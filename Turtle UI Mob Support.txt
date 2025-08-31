@@ -1,0 +1,279 @@
+--// Turtle UI Lib (Mobile Supported, Full)
+
+local library = {}
+local UserInputService = game:GetService("UserInputService")
+
+-- screen gui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "TurtleUILib"
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game:GetService("CoreGui")
+
+-- global scale
+local UIScale = Instance.new("UIScale")
+UIScale.Parent = ScreenGui
+if UserInputService.TouchEnabled then
+    UIScale.Scale = 0.8 -- bigger for mobile
+else
+    UIScale.Scale = 0.9
+end
+
+-- dragify
+local function Dragify(Frame)
+    local dragToggle, dragStart, startPos
+    local function updateInput(input)
+        local delta = input.Position - dragStart
+        Frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+    Frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragToggle = true
+            dragStart = input.Position
+            startPos = Frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragToggle = false
+                end
+            end)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragToggle and (input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch) then
+            updateInput(input)
+        end
+    end)
+end
+
+-- window
+function library:Window(title)
+    local Window = Instance.new("Frame")
+    Window.Size = UDim2.new(0, 270, 0, 330)
+    Window.Position = UDim2.new(0.5, -135, 0.5, -165)
+    Window.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Window.BorderSizePixel = 0
+    Window.Parent = ScreenGui
+    Dragify(Window)
+
+    local TitleBar = Instance.new("TextLabel")
+    TitleBar.Size = UDim2.new(1, 0, 0, 34)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    TitleBar.Text = title or "Window"
+    TitleBar.TextColor3 = Color3.new(1, 1, 1)
+    TitleBar.Font = Enum.Font.SourceSansBold
+    TitleBar.TextSize = 17
+    TitleBar.Parent = Window
+
+    local Scroller = Instance.new("ScrollingFrame")
+    Scroller.Size = UDim2.new(1, 0, 1, -34)
+    Scroller.Position = UDim2.new(0, 0, 0, 34)
+    Scroller.BackgroundTransparency = 1
+    Scroller.BorderSizePixel = 0
+    Scroller.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Scroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    Scroller.ScrollBarThickness = 4
+    Scroller.Parent = Window
+
+    local Layout = Instance.new("UIListLayout")
+    Layout.Padding = UDim.new(0, 6)
+    Layout.SortOrder = Enum.SortOrder.LayoutOrder
+    Layout.Parent = Scroller
+
+    local functions = {}
+
+    -- Button
+    function functions:Button(name, callback)
+        local Button = Instance.new("TextButton")
+        Button.Size = UDim2.new(1, -10, 0, 32)
+        Button.Position = UDim2.new(0, 5, 0, 0)
+        Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        Button.Text = name
+        Button.TextColor3 = Color3.new(1, 1, 1)
+        Button.Font = Enum.Font.SourceSans
+        Button.TextSize = 15
+        Button.Parent = Scroller
+        Button.MouseButton1Click:Connect(function()
+            if callback then callback() end
+        end)
+    end
+
+    -- Label
+    function functions:Label(text)
+        local Label = Instance.new("TextLabel")
+        Label.Size = UDim2.new(1, -10, 0, 26)
+        Label.Position = UDim2.new(0, 5, 0, 0)
+        Label.BackgroundTransparency = 1
+        Label.Text = text
+        Label.TextColor3 = Color3.new(1, 1, 1)
+        Label.Font = Enum.Font.SourceSans
+        Label.TextSize = 15
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+        Label.Parent = Scroller
+    end
+
+    -- Toggle
+    function functions:Toggle(name, default, callback)
+        local Button = Instance.new("TextButton")
+        Button.Size = UDim2.new(1, -10, 0, 32)
+        Button.Position = UDim2.new(0, 5, 0, 0)
+        Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        Button.TextColor3 = Color3.new(1, 1, 1)
+        Button.Font = Enum.Font.SourceSans
+        Button.TextSize = 15
+        Button.Text = name .. ": " .. (default and "ON" or "OFF")
+        Button.Parent = Scroller
+        local state = default or false
+        Button.MouseButton1Click:Connect(function()
+            state = not state
+            Button.Text = name .. ": " .. (state and "ON" or "OFF")
+            if callback then callback(state) end
+        end)
+    end
+
+    -- Slider
+    function functions:Slider(name, min, max, default, callback)
+        local Frame = Instance.new("Frame")
+        Frame.Size = UDim2.new(1, -10, 0, 40)
+        Frame.Position = UDim2.new(0, 5, 0, 0)
+        Frame.BackgroundTransparency = 1
+        Frame.Parent = Scroller
+
+        local Label = Instance.new("TextLabel")
+        Label.Size = UDim2.new(1, 0, 0, 18)
+        Label.Text = name .. ": " .. tostring(default)
+        Label.TextColor3 = Color3.new(1, 1, 1)
+        Label.Font = Enum.Font.SourceSans
+        Label.TextSize = 14
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+        Label.BackgroundTransparency = 1
+        Label.Parent = Frame
+
+        local SliderBack = Instance.new("Frame")
+        SliderBack.Size = UDim2.new(1, 0, 0, 12)
+        SliderBack.Position = UDim2.new(0, 0, 0, 24)
+        SliderBack.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        SliderBack.Parent = Frame
+
+        local Fill = Instance.new("Frame")
+        Fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
+        Fill.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+        Fill.Parent = SliderBack
+
+        local dragging = false
+        local function update(input)
+            local percent = math.clamp((input.Position.X - SliderBack.AbsolutePosition.X) / SliderBack.AbsoluteSize.X,0,1)
+            local val = math.floor(min + (max-min)*percent)
+            Fill.Size = UDim2.new(percent, 0, 1, 0)
+            Label.Text = name .. ": " .. tostring(val)
+            if callback then callback(val) end
+        end
+        SliderBack.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                update(input)
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                update(input)
+            end
+        end)
+    end
+
+    -- Dropdown
+    function functions:Dropdown(name, list, callback)
+        local Button = Instance.new("TextButton")
+        Button.Size = UDim2.new(1, -10, 0, 32)
+        Button.Position = UDim2.new(0, 5, 0, 0)
+        Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        Button.Text = name .. " ▼"
+        Button.TextColor3 = Color3.new(1, 1, 1)
+        Button.Font = Enum.Font.SourceSans
+        Button.TextSize = 15
+        Button.Parent = Scroller
+
+        local Open = false
+        local Frame = Instance.new("Frame")
+        Frame.Size = UDim2.new(1, -10, 0, 0)
+        Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        Frame.ClipsDescendants = true
+        Frame.Parent = Scroller
+
+        local Layout = Instance.new("UIListLayout")
+        Layout.SortOrder = Enum.SortOrder.LayoutOrder
+        Layout.Parent = Frame
+
+        for _, item in ipairs(list) do
+            local Option = Instance.new("TextButton")
+            Option.Size = UDim2.new(1, 0, 0, 28)
+            Option.Text = item
+            Option.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            Option.TextColor3 = Color3.new(1, 1, 1)
+            Option.Font = Enum.Font.SourceSans
+            Option.TextSize = 14
+            Option.Parent = Frame
+            Option.MouseButton1Click:Connect(function()
+                Button.Text = name .. ": " .. item
+                if callback then callback(item) end
+                Frame.Size = UDim2.new(1, -10, 0, 0)
+                Open = false
+            end)
+        end
+
+        Button.MouseButton1Click:Connect(function()
+            Open = not Open
+            Frame.Size = Open and UDim2.new(1, -10, 0, #list*28) or UDim2.new(1, -10, 0, 0)
+        end)
+    end
+
+    -- TextBox
+    function functions:TextBox(name, placeholder, callback)
+        local Box = Instance.new("TextBox")
+        Box.Size = UDim2.new(1, -10, 0, 32)
+        Box.Position = UDim2.new(0, 5, 0, 0)
+        Box.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        Box.PlaceholderText = placeholder or ""
+        Box.Text = ""
+        Box.TextColor3 = Color3.new(1, 1, 1)
+        Box.Font = Enum.Font.SourceSans
+        Box.TextSize = 15
+        Box.Parent = Scroller
+        Box.FocusLost:Connect(function(enter)
+            if enter and callback then callback(Box.Text) end
+        end)
+    end
+
+    -- ColorPicker (simple)
+    function functions:ColorPicker(name, default, callback)
+        local Button = Instance.new("TextButton")
+        Button.Size = UDim2.new(1, -10, 0, 32)
+        Button.Position = UDim2.new(0, 5, 0, 0)
+        Button.BackgroundColor3 = default or Color3.new(1,1,1)
+        Button.Text = name
+        Button.TextColor3 = Color3.new(0, 0, 0)
+        Button.Font = Enum.Font.SourceSans
+        Button.TextSize = 15
+        Button.Parent = Scroller
+        Button.MouseButton1Click:Connect(function()
+            local color = Color3.fromRGB(math.random(0,255), math.random(0,255), math.random(0,255))
+            Button.BackgroundColor3 = color
+            if callback then callback(color) end
+        end)
+    end
+
+    return functions
+end
+
+return library
